@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>问卷调查</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .survey-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .page-indicator {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .question-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .answer-input {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 18px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            margin-bottom: 30px;
+        }
+
+        .answer-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.2);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .navigation {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .nav-btn:hover {
+            border-color: #4facfe;
+            color: #4facfe;
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            max-width: 300px;
+            width: 90%;
+        }
+
+        .toast.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .toast-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .toast.correct .toast-icon {
+            color: #10b981;
+        }
+
+        .toast.incorrect .toast-icon {
+            color: #ef4444;
+        }
+
+        .toast-message {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .toast.correct .toast-message {
+            color: #10b981;
+        }
+
+        .toast.incorrect .toast-message {
+            color: #ef4444;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px 30px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e1e5e9;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .completion {
+            text-align: center;
+            padding: 50px 30px;
+        }
+
+        .completion-icon {
+            font-size: 64px;
+            color: #10b981;
+            margin-bottom: 20px;
+        }
+
+        .completion-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .completion-message {
+            color: #666;
+            font-size: 16px;
+        }
+
+        @media (max-width: 480px) {
+            .survey-container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 25px 15px;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .question-title {
+                font-size: 20px;
+            }
+            
+            .answer-input {
+                font-size: 16px;
+                padding: 14px;
+            }
+            
+            .submit-btn {
+                font-size: 16px;
+                padding: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="survey-container">
+        <div class="header">
+            <div class="page-indicator" id="pageIndicator">加载中...</div>
+            <div class="question-title" id="questionTitle">问卷调查</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <div class="content" id="content">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <div>加载问题中...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="toast" id="toast">
+        <div class="toast-icon" id="toastIcon">✓</div>
+        <div class="toast-message" id="toastMessage">回答正确！</div>
+    </div>
+
+    <script>
+        class SurveyApp {
+            constructor() {
+                this.questions = [];
+                this.currentIndex = 0;
+                this.userAnswers = [];
+                this.init();
+            }
+
+            async init() {
+                await this.loadQuestions();
+                this.renderQuestion();
+            }
+
+            async loadQuestions() {
+                try {
+                    // 模拟数据，实际使用时替换为真实的 index.json
+                    const mockData = [
+                        {
+                            page: 1,
+                            question: "你最喜欢的颜色是什么？",
+                            answer: "红色",
+                            tip1: "回答错误！再想想看。",
+                            tip2: "回答正确！红色确实很棒。"
+                        },
+                        {
+                            page: 2,
+                            question: "一周有几天？",
+                            answer: "7",
+                            tip1: "回答错误！请重新计算。",
+                            tip2: "回答正确！一周有七天。"
+                        },
+                        {
+                            page: 3,
+                            question: "地球上最大的海洋是？",
+                            answer: "太平洋",
+                            tip1: "回答错误！提示：这个海洋在亚洲和美洲之间。",
+                            tip2: "回答正确！太平洋是世界上最大的海洋。"
+                        }
+                    ];
+
+                    // 实际使用时取消注释这行
+                    const response = await fetch('index.json');
+                    this.questions = await response.json();
+                    
+                    // this.questions = mockData;
+                } catch (error) {
+                    console.error('加载问题失败:', error);
+                    this.showError('加载问题失败，请检查 index.json 文件');
+                }
+            }
+
+            renderQuestion() {
+                const content = document.getElementById('content');
+                
+                if (this.currentIndex >= this.questions.length) {
+                    this.showCompletion();
+                    return;
+                }
+
+                const question = this.questions[this.currentIndex];
+                
+                // 更新头部信息
+                document.getElementById('pageIndicator').textContent = 
+                    `第 ${this.currentIndex + 1} 题 / 共 ${this.questions.length} 题`;
+                document.getElementById('questionTitle').textContent = question.question;
+                document.getElementById('progressFill').style.width = 
+                    `${((this.currentIndex) / this.questions.length) * 100}%`;
+
+                // 渲染问题内容
+                content.innerHTML = `
+                    <input type="text" 
+                           class="answer-input" 
+                           id="answerInput" 
+                           placeholder="请输入你的答案..."
+                           value="${this.userAnswers[this.currentIndex] || ''}"
+                           autocomplete="off">
+                    
+                    <button class="submit-btn" onclick="app.checkAnswer()">
+                        提交答案
+                    </button>
+                    
+                    <div class="navigation">
+                        <button class="nav-btn" 
+                                onclick="app.previousQuestion()" 
+                                ${this.currentIndex === 0 ? 'disabled' : ''}>
+                            上一题
+                        </button>
+                        <button class="nav-btn" 
+                                onclick="app.nextQuestion()"
+                                ${this.currentIndex === this.questions.length - 1 ? 'disabled' : ''}>
+                            下一题
+                        </button>
+                    </div>
+                `;
+
+                // 自动聚焦输入框
+                setTimeout(() => {
+                    document.getElementById('answerInput').focus();
+                }, 100);
+
+                // 回车提交
+                document.getElementById('answerInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.checkAnswer();
+                    }
+                });
+            }
+
+            checkAnswer() {
+                const input = document.getElementById('answerInput');
+                const userAnswer = input.value.trim();
+                const question = this.questions[this.currentIndex];
+
+                if (!userAnswer) {
+                    input.focus();
+                    return;
+                }
+
+                // 保存用户答案
+                this.userAnswers[this.currentIndex] = userAnswer;
+
+                // 检查答案（不区分大小写）
+                const isCorrect = userAnswer.toLowerCase() === question.answer.toLowerCase();
+                
+                this.showToast(isCorrect, isCorrect ? question.tip2 : question.tip1);
+
+                // 正确答案自动跳转到下一题
+                if (isCorrect && this.currentIndex < this.questions.length - 1) {
+                    setTimeout(() => {
+                        this.nextQuestion();
+                    }, 2000);
+                }
+            }
+
+            showToast(isCorrect, message) {
+                const toast = document.getElementById('toast');
+                const overlay = document.getElementById('overlay');
+                const icon = document.getElementById('toastIcon');
+                const messageEl = document.getElementById('toastMessage');
+
+                icon.textContent = isCorrect ? '✓' : '✗';
+                messageEl.textContent = message;
+                
+                toast.className = `toast ${isCorrect ? 'correct' : 'incorrect'} show`;
+                overlay.classList.add('show');
+
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    overlay.classList.remove('show');
+                }, 2500);
+
+                // 点击遮罩关闭提示
+                overlay.onclick = () => {
+                    toast.classList.remove('show');
+                    overlay.classList.remove('show');
+                };
+            }
+
+            previousQuestion() {
+                if (this.currentIndex > 0) {
+                    this.currentIndex--;
+                    this.renderQuestion();
+                }
+            }
+
+            nextQuestion() {
+                if (this.currentIndex < this.questions.length - 1) {
+                    this.currentIndex++;
+                    this.renderQuestion();
+                }
+            }
+
+            showCompletion() {
+                document.getElementById('pageIndicator').textContent = '问卷完成';
+                document.getElementById('questionTitle').textContent = '恭喜完成！';
+                document.getElementById('progressFill').style.width = '100%';
+
+                const content = document.getElementById('content');
+                const correctCount = this.userAnswers.reduce((count, answer, index) => {
+                    return count + (answer.toLowerCase() === this.questions[index].answer.toLowerCase() ? 1 : 0);
+                }, 0);
+
+                content.innerHTML = `
+                    <div class="completion">
+                        <div class="completion-icon">🎉</div>
+                        <div class="completion-title">问卷调查完成！</div>
+                        <div class="completion-message">
+                            您答对了 ${correctCount}/${this.questions.length} 题<br>
+                            感谢您的参与！
+                        </div>
+                        <button class="submit-btn" onclick="app.restart()" style="margin-top: 30px;">
+                            重新开始
+                        </button>
+                    </div>
+                `;
+            }
+
+            showError(message) {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="loading">
+                        <div style="color: #ef4444; font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                        <div>${message}</div>
+                    </div>
+                `;
+            }
+
+            restart() {
+                this.currentIndex = 0;
+                this.userAnswers = [];
+                this.renderQuestion();
+            }
+        }
+
+        // 初始化应用
+        const app = new SurveyApp();
+    </script>
+</body>
+</html>
